@@ -19,12 +19,17 @@ limitations under the License.
 package fake
 
 import (
+	v1alpha1 "go.openviz.dev/apimachinery/client/clientset/versioned/typed/ui/v1alpha1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
 
 type FakeUiV1alpha1 struct {
 	*testing.Fake
+}
+
+func (c *FakeUiV1alpha1) DashboardGroups(namespace string) v1alpha1.DashboardGroupInterface {
+	return &FakeDashboardGroups{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

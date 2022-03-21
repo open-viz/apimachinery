@@ -29,6 +29,9 @@ const (
 
 // DashboardGroup is the Schema for the DashboardGroups API
 
+// +genclient
+// +genclient:onlyVerbs=create
+// +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type DashboardGroup struct {
 	metav1.TypeMeta `json:",inline"`

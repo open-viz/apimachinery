@@ -26,11 +26,16 @@ import (
 
 type UiV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	DashboardGroupsGetter
 }
 
 // UiV1alpha1Client is used to interact with features provided by the ui.openviz.dev group.
 type UiV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *UiV1alpha1Client) DashboardGroups(namespace string) DashboardGroupInterface {
+	return newDashboardGroups(c, namespace)
 }
 
 // NewForConfig creates a new UiV1alpha1Client for the given config.
