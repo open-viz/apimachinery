@@ -133,19 +133,23 @@ version:
 	@echo ::set-output name=commit_hash::$(commit_hash)
 	@echo ::set-output name=commit_timestamp::$(commit_timestamp)
 
-.PHONY: codegen
-codegen:
-	@echo "Generating deepcopy funcs"
-	@docker run --rm \
-		-u $$(id -u):$$(id -g) \
-		-v /tmp:/.cache \
-		-v $$(pwd):$(DOCKER_REPO_ROOT) \
-		-w $(DOCKER_REPO_ROOT) \
-	    --env HTTP_PROXY=$(HTTP_PROXY) \
-	    --env HTTPS_PROXY=$(HTTPS_PROXY) \
-		$(CODE_GENERATOR_IMAGE) \
-		controller-gen \
-			object:headerFile="./hack/license/go.txt" paths="./apis/..."
+# Generate a typed clientset
+.PHONY: clientset
+clientset:
+	@docker run --rm                                   \
+		-u $$(id -u):$$(id -g)                           \
+		-v /tmp:/.cache                                  \
+		-v $$(pwd):$(DOCKER_REPO_ROOT)                   \
+		-w $(DOCKER_REPO_ROOT)                           \
+		--env HTTP_PROXY=$(HTTP_PROXY)                   \
+		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
+		$(CODE_GENERATOR_IMAGE)                          \
+		/go/src/k8s.io/code-generator/generate-groups.sh \
+			deepcopy,client                                \
+			$(GO_PKG)/$(REPO)/client                       \
+			$(GO_PKG)/$(REPO)/apis                         \
+			"$(API_GROUPS)"                                \
+			--go-header-file "./hack/license/go.txt"
 
 # Generate openapi schema
 .PHONY: openapi
@@ -220,7 +224,7 @@ label-crds: $(BUILD_DIRS)
 manifests: gen-crds patch-crds label-crds
 
 .PHONY: gen
-gen: codegen manifests openapi
+gen: clientset manifests openapi
 
 fmt: $(BUILD_DIRS)
 	@docker run                                                 \
