@@ -30,7 +30,6 @@ import (
 // FakeDashboardGroups implements DashboardGroupInterface
 type FakeDashboardGroups struct {
 	Fake *FakeUiV1alpha1
-	ns   string
 }
 
 var dashboardgroupsResource = schema.GroupVersionResource{Group: "ui.openviz.dev", Version: "v1alpha1", Resource: "dashboardgroups"}
@@ -40,8 +39,7 @@ var dashboardgroupsKind = schema.GroupVersionKind{Group: "ui.openviz.dev", Versi
 // Create takes the representation of a dashboardGroup and creates it.  Returns the server's representation of the dashboardGroup, and an error, if there is any.
 func (c *FakeDashboardGroups) Create(ctx context.Context, dashboardGroup *v1alpha1.DashboardGroup, opts v1.CreateOptions) (result *v1alpha1.DashboardGroup, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(dashboardgroupsResource, c.ns, dashboardGroup), &v1alpha1.DashboardGroup{})
-
+		Invokes(testing.NewRootCreateAction(dashboardgroupsResource, dashboardGroup), &v1alpha1.DashboardGroup{})
 	if obj == nil {
 		return nil, err
 	}

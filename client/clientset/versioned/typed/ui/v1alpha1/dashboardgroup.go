@@ -30,7 +30,7 @@ import (
 // DashboardGroupsGetter has a method to return a DashboardGroupInterface.
 // A group's client should implement this interface.
 type DashboardGroupsGetter interface {
-	DashboardGroups(namespace string) DashboardGroupInterface
+	DashboardGroups() DashboardGroupInterface
 }
 
 // DashboardGroupInterface has methods to work with DashboardGroup resources.
@@ -42,14 +42,12 @@ type DashboardGroupInterface interface {
 // dashboardGroups implements DashboardGroupInterface
 type dashboardGroups struct {
 	client rest.Interface
-	ns     string
 }
 
 // newDashboardGroups returns a DashboardGroups
-func newDashboardGroups(c *UiV1alpha1Client, namespace string) *dashboardGroups {
+func newDashboardGroups(c *UiV1alpha1Client) *dashboardGroups {
 	return &dashboardGroups{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -57,7 +55,6 @@ func newDashboardGroups(c *UiV1alpha1Client, namespace string) *dashboardGroups 
 func (c *dashboardGroups) Create(ctx context.Context, dashboardGroup *v1alpha1.DashboardGroup, opts v1.CreateOptions) (result *v1alpha1.DashboardGroup, err error) {
 	result = &v1alpha1.DashboardGroup{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("dashboardgroups").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(dashboardGroup).

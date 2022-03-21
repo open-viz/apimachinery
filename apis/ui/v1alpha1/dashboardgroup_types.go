@@ -30,6 +30,7 @@ const (
 // DashboardGroup is the Schema for the DashboardGroups API
 
 // +genclient
+// +genclient:nonNamespaced
 // +genclient:onlyVerbs=create
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

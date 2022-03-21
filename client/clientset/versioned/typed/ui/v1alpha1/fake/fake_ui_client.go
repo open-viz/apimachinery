@@ -28,8 +28,8 @@ type FakeUiV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeUiV1alpha1) DashboardGroups(namespace string) v1alpha1.DashboardGroupInterface {
-	return &FakeDashboardGroups{c, namespace}
+func (c *FakeUiV1alpha1) DashboardGroups() v1alpha1.DashboardGroupInterface {
+	return &FakeDashboardGroups{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

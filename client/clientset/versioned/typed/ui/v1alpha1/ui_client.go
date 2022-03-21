@@ -34,8 +34,8 @@ type UiV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *UiV1alpha1Client) DashboardGroups(namespace string) DashboardGroupInterface {
-	return newDashboardGroups(c, namespace)
+func (c *UiV1alpha1Client) DashboardGroups() DashboardGroupInterface {
+	return newDashboardGroups(c)
 }
 
 // NewForConfig creates a new UiV1alpha1Client for the given config.
