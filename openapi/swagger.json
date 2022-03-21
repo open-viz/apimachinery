@@ -128,7 +128,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboardList"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboardList"
             }
           }
         },
@@ -301,7 +301,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboardList"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboardList"
             }
           }
         },
@@ -335,7 +335,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
             }
           },
           {
@@ -357,19 +357,19 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
             }
           },
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
             }
           },
           "202": {
             "description": "Accepted",
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
             }
           }
         },
@@ -538,7 +538,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
             }
           }
         },
@@ -572,7 +572,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
             }
           },
           {
@@ -594,13 +594,13 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
             }
           },
           "201": {
             "description": "Created",
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
             }
           }
         },
@@ -741,7 +741,7 @@
           "200": {
             "description": "OK",
             "schema": {
-              "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+              "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
             }
           }
         },
@@ -1128,7 +1128,7 @@
     }
   },
   "definitions": {
-    "dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard": {
+    "dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard": {
       "type": "object",
       "properties": {
         "apiVersion": {
@@ -1145,11 +1145,11 @@
         },
         "spec": {
           "default": {},
-          "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboardSpec"
+          "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboardSpec"
         },
         "status": {
           "default": {},
-          "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboardStatus"
+          "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboardStatus"
         }
       },
       "x-kubernetes-group-version-kind": [
@@ -1160,7 +1160,7 @@
         }
       ]
     },
-    "dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboardList": {
+    "dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboardList": {
       "type": "object",
       "properties": {
         "apiVersion": {
@@ -1171,7 +1171,7 @@
           "type": "array",
           "items": {
             "default": {},
-            "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboard"
+            "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboard"
           }
         },
         "kind": {
@@ -1191,7 +1191,7 @@
         }
       ]
     },
-    "dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboardReference": {
+    "dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboardReference": {
       "type": "object",
       "properties": {
         "id": {
@@ -1217,7 +1217,7 @@
         }
       }
     },
-    "dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboardSpec": {
+    "dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboardSpec": {
       "type": "object",
       "properties": {
         "folderID": {
@@ -1238,11 +1238,11 @@
         },
         "templatize": {
           "description": "Templatize defines the fields which supports templating in GrafanaDashboard Model json",
-          "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.ModelTemplateConfiguration"
+          "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.ModelTemplateConfiguration"
         }
       }
     },
-    "dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboardStatus": {
+    "dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboardStatus": {
       "type": "object",
       "properties": {
         "conditions": {
@@ -1255,7 +1255,7 @@
         },
         "dashboard": {
           "description": "Dashboard indicates the updated grafanadashboard database",
-          "$ref": "#/definitions/dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.GrafanaDashboardReference"
+          "$ref": "#/definitions/dev.openviz.go.apimachinery.apis.openviz.v1alpha1.GrafanaDashboardReference"
         },
         "observedGeneration": {
           "description": "ObservedGeneration is the most recent generation observed for this resource. It corresponds to the resource's generation, which is updated on mutation by the API Server.",
@@ -1272,7 +1272,7 @@
         }
       }
     },
-    "dev.openviz.go.grafana-tools.apis.openviz.v1alpha1.ModelTemplateConfiguration": {
+    "dev.openviz.go.apimachinery.apis.openviz.v1alpha1.ModelTemplateConfiguration": {
       "type": "object",
       "properties": {
         "datasource": {

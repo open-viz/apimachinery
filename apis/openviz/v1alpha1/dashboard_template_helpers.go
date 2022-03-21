@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"go.openviz.dev/grafana-tools/crds"
+	"go.openviz.dev/apimachinery/crds"
 
 	"kmodules.xyz/client-go/apiextensions"
 )

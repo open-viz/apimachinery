@@ -16,11 +16,10 @@ SHELL=/bin/bash -o pipefail
 
 GO_PKG   := go.openviz.dev
 REPO     := $(notdir $(shell pwd))
-BIN      := grafana-tools
+BIN      := apimachinery
 COMPRESS ?= no
 
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS          ?= "crd:crdVersions={v1}"
+CRD_OPTIONS          ?= "crd:generateEmbeddedObjectMeta=true"
 CODE_GENERATOR_IMAGE ?= appscode/gengo:release-1.21
 API_GROUPS           ?= openviz:v1alpha1 ui:v1alpha1
 
@@ -52,8 +51,8 @@ endif
 ### These variables should not need tweaking.
 ###
 
-SRC_PKGS := apis cmd crds pkg # directories which hold app source excluding tests (not vendored)
-SRC_DIRS := $(SRC_PKGS) test hack/gencrd hack/gendocs # directories which hold app source (not vendored)
+SRC_PKGS := apis crds # directories which hold app source excluding tests (not vendored)
+SRC_DIRS := $(SRC_PKGS) hack/gencrd
 
 DOCKER_PLATFORMS := linux/amd64 linux/arm linux/arm64
 BIN_PLATFORMS    := $(DOCKER_PLATFORMS)
@@ -87,8 +86,7 @@ BUILD_DIRS  := bin/$(OS)_$(ARCH)     \
                .go/cache             \
                hack/config           \
                $(HOME)/.credentials  \
-               $(HOME)/.kube         \
-               $(HOME)/.minikube
+               $(HOME)/.kube
 
 DOCKERFILE_PROD  = Dockerfile.in
 DOCKERFILE_DBG   = Dockerfile.dbg
@@ -160,8 +158,8 @@ openapi: $(addprefix openapi-, $(subst :,_, $(API_GROUPS)))
 		-w $(DOCKER_REPO_ROOT)                           \
 		--env HTTP_PROXY=$(HTTP_PROXY)                   \
 		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
-	    --env GO111MODULE=on                             \
-	    --env GOFLAGS="-mod=vendor"                      \
+		--env GO111MODULE=on                             \
+		--env GOFLAGS="-mod=vendor"                      \
 		$(BUILD_IMAGE)                                   \
 		go run hack/gencrd/main.go
 
@@ -187,17 +185,17 @@ openapi-%:
 .PHONY: gen-crds
 gen-crds:
 	@echo "Generating CRD manifests"
-	@docker run --rm \
-		-u $$(id -u):$$(id -g) \
-		-v /tmp:/.cache \
-		-v $$(pwd):$(DOCKER_REPO_ROOT) \
-		-w $(DOCKER_REPO_ROOT) \
-	    --env HTTP_PROXY=$(HTTP_PROXY) \
-	    --env HTTPS_PROXY=$(HTTPS_PROXY) \
-		$(CODE_GENERATOR_IMAGE) \
-		controller-gen \
-			$(CRD_OPTIONS) \
-			paths="./apis/..." \
+	@docker run --rm                        \
+		-u $$(id -u):$$(id -g)              \
+		-v /tmp:/.cache                     \
+		-v $$(pwd):$(DOCKER_REPO_ROOT)      \
+		-w $(DOCKER_REPO_ROOT)              \
+	    --env HTTP_PROXY=$(HTTP_PROXY)      \
+	    --env HTTPS_PROXY=$(HTTPS_PROXY)    \
+		$(CODE_GENERATOR_IMAGE)             \
+		controller-gen                      \
+			$(CRD_OPTIONS)                  \
+			paths="./apis/..."              \
 			output:crd:artifacts:config=crds
 
 
@@ -244,16 +242,8 @@ fmt: $(BUILD_DIRS)
 
 build: $(OUTBIN)
 
-# The following structure defeats Go's (intentional) behavior to always touch
-# result files, even if they have not changed.  This will still run `go` but
-# will not trigger further work if nothing has actually changed.
-
-$(OUTBIN): .go/$(OUTBIN).stamp
-	@true
-
-# This will build the binary under ./.go and update the real binary iff needed.
-.PHONY: .go/$(OUTBIN).stamp
-.go/$(OUTBIN).stamp: $(BUILD_DIRS)
+.PHONY: .go/$(OUTBIN)
+$(OUTBIN): $(BUILD_DIRS)
 	@echo "making $(OUTBIN)"
 	@docker run                                                 \
 	    -i                                                      \
@@ -278,26 +268,6 @@ $(OUTBIN): .go/$(OUTBIN).stamp
 	        commit_timestamp=$(commit_timestamp)                \
 	        ./hack/build.sh                                     \
 	    "
-	@if [ $(COMPRESS) = yes ] && [ $(OS) != darwin ]; then          \
-		echo "compressing $(OUTBIN)";                               \
-		@docker run                                                 \
-		    -i                                                      \
-		    --rm                                                    \
-		    -u $$(id -u):$$(id -g)                                  \
-		    -v $$(pwd):/src                                         \
-		    -w /src                                                 \
-		    -v $$(pwd)/.go/bin/$(OS)_$(ARCH):/go/bin                \
-		    -v $$(pwd)/.go/bin/$(OS)_$(ARCH):/go/bin/$(OS)_$(ARCH)  \
-		    -v $$(pwd)/.go/cache:/.cache                            \
-		    --env HTTP_PROXY=$(HTTP_PROXY)                          \
-		    --env HTTPS_PROXY=$(HTTPS_PROXY)                        \
-		    $(BUILD_IMAGE)                                          \
-		    upx --brute /go/$(OUTBIN);                              \
-	fi
-	@if ! cmp -s .go/$(OUTBIN) $(OUTBIN); then \
-	    mv .go/$(OUTBIN) $(OUTBIN);            \
-	    date >$@;                              \
-	fi
 	@echo
 
 # Used to track state in hidden files.
@@ -379,7 +349,6 @@ e2e-tests: $(BUILD_DIRS)
 	    -w /src                                                 \
 	    --net=host                                              \
 	    -v $(HOME)/.kube:/.kube                                 \
-	    -v $(HOME)/.minikube:$(HOME)/.minikube                  \
 	    -v $(HOME)/.credentials:$(HOME)/.credentials            \
 	    -v $$(pwd)/.go/bin/$(OS)_$(ARCH):/go/bin                \
 	    -v $$(pwd)/.go/bin/$(OS)_$(ARCH):/go/bin/$(OS)_$(ARCH)  \
@@ -497,7 +466,7 @@ add-license:
 		--env HTTP_PROXY=$(HTTP_PROXY)                   \
 		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
 		$(BUILD_IMAGE)                                   \
-		ltag -t "./hack/license" --excludes "vendor contrib" -v
+		ltag -t "./hack/license" --excludes "vendor contrib libbuild third_party" -v
 
 .PHONY: check-license
 check-license:
@@ -510,10 +479,10 @@ check-license:
 		--env HTTP_PROXY=$(HTTP_PROXY)                   \
 		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
 		$(BUILD_IMAGE)                                   \
-		ltag -t "./hack/license" --excludes "vendor contrib" --check -v
+		ltag -t "./hack/license" --excludes "vendor contrib libbuild third_party" --check -v
 
 .PHONY: ci
-ci: check-license lint build unit-tests #cover verify
+ci: verify check-license lint build unit-tests #cover
 
 .PHONY: qa
 qa:
@@ -542,22 +511,3 @@ release:
 .PHONY: clean
 clean:
 	rm -rf .go bin
-
-.PHONY: run
-run:
-	GO111MODULE=on go run -mod=vendor ./cmd/grafana-tools run \
-		--v=3 \
-		--secure-port=8443 \
-		--kubeconfig=$(KUBECONFIG) \
-		--authorization-kubeconfig=$(KUBECONFIG) \
-		--authentication-kubeconfig=$(KUBECONFIG) \
-		--authentication-skip-lookup
-
-.PHONY: push-to-kind
-push-to-kind: container
-	@echo "Loading docker image into kind cluster...."
-	@kind load docker-image $(IMAGE):$(TAG)
-	@echo "Image has been pushed successfully into kind cluster."
-
-.PHONY: deploy-to-kind
-deploy-to-kind: uninstall push-to-kind install

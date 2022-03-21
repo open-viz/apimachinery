@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.openviz.dev/grafana-tools/crds"
+	"go.openviz.dev/apimachinery/crds"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

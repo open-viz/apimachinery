@@ -17,7 +17,7 @@
 set -eou pipefail
 
 GOPATH=$(go env GOPATH)
-REPO_ROOT="$GOPATH/src/go.openviz.dev/grafana-tools"
+REPO_ROOT="$GOPATH/src/go.openviz.dev/apimachinery"
 
 pushd $REPO_ROOT
 

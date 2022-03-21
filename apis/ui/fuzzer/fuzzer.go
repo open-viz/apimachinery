@@ -17,7 +17,7 @@ limitations under the License.
 package fuzzer
 
 import (
-	"go.openviz.dev/grafana-tools/apis/ui/v1alpha1"
+	"go.openviz.dev/apimachinery/apis/ui/v1alpha1"
 
 	fuzz "github.com/google/gofuzz"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
