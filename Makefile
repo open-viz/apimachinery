@@ -20,7 +20,7 @@ BIN      := apimachinery
 COMPRESS ?= no
 
 CRD_OPTIONS          ?= "crd:generateEmbeddedObjectMeta=true"
-CODE_GENERATOR_IMAGE ?= appscode/gengo:release-1.21
+CODE_GENERATOR_IMAGE ?= appscode/gengo:release-1.24
 API_GROUPS           ?= openviz:v1alpha1 ui:v1alpha1
 
 # Where to push the docker image.

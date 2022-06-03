@@ -105,7 +105,7 @@ func (c *FakeGrafanaDashboardTemplates) Update(ctx context.Context, grafanaDashb
 // Delete takes name of the grafanaDashboardTemplate and deletes it. Returns an error if one occurs.
 func (c *FakeGrafanaDashboardTemplates) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(grafanadashboardtemplatesResource, c.ns, name), &v1alpha1.GrafanaDashboardTemplate{})
+		Invokes(testing.NewDeleteActionWithOptions(grafanadashboardtemplatesResource, c.ns, name, opts), &v1alpha1.GrafanaDashboardTemplate{})
 
 	return err
 }
