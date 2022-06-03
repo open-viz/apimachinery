@@ -117,7 +117,7 @@ func (c *FakeGrafanaDatasources) UpdateStatus(ctx context.Context, grafanaDataso
 // Delete takes name of the grafanaDatasource and deletes it. Returns an error if one occurs.
 func (c *FakeGrafanaDatasources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(grafanadatasourcesResource, c.ns, name), &v1alpha1.GrafanaDatasource{})
+		Invokes(testing.NewDeleteActionWithOptions(grafanadatasourcesResource, c.ns, name, opts), &v1alpha1.GrafanaDatasource{})
 
 	return err
 }

@@ -117,7 +117,7 @@ func (c *FakeGrafanaDashboards) UpdateStatus(ctx context.Context, grafanaDashboa
 // Delete takes name of the grafanaDashboard and deletes it. Returns an error if one occurs.
 func (c *FakeGrafanaDashboards) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(grafanadashboardsResource, c.ns, name), &v1alpha1.GrafanaDashboard{})
+		Invokes(testing.NewDeleteActionWithOptions(grafanadashboardsResource, c.ns, name, opts), &v1alpha1.GrafanaDashboard{})
 
 	return err
 }

@@ -76,7 +76,10 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
 // OpenvizV1alpha1 retrieves the OpenvizV1alpha1Client
 func (c *Clientset) OpenvizV1alpha1() openvizv1alpha1.OpenvizV1alpha1Interface {
