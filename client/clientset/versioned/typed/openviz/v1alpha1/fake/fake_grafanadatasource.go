@@ -24,7 +24,6 @@ import (
 	v1alpha1 "go.openviz.dev/apimachinery/apis/openviz/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeGrafanaDatasources struct {
 	ns   string
 }
 
-var grafanadatasourcesResource = schema.GroupVersionResource{Group: "openviz.dev", Version: "v1alpha1", Resource: "grafanadatasources"}
+var grafanadatasourcesResource = v1alpha1.SchemeGroupVersion.WithResource("grafanadatasources")
 
-var grafanadatasourcesKind = schema.GroupVersionKind{Group: "openviz.dev", Version: "v1alpha1", Kind: "GrafanaDatasource"}
+var grafanadatasourcesKind = v1alpha1.SchemeGroupVersion.WithKind("GrafanaDatasource")
 
 // Get takes name of the grafanaDatasource, and returns the corresponding grafanaDatasource object, and an error if there is any.
 func (c *FakeGrafanaDatasources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.GrafanaDatasource, err error) {
