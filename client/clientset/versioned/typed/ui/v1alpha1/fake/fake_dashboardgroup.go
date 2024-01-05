@@ -23,7 +23,6 @@ import (
 
 	v1alpha1 "go.openviz.dev/apimachinery/apis/ui/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -32,9 +31,9 @@ type FakeDashboardGroups struct {
 	Fake *FakeUiV1alpha1
 }
 
-var dashboardgroupsResource = schema.GroupVersionResource{Group: "ui.openviz.dev", Version: "v1alpha1", Resource: "dashboardgroups"}
+var dashboardgroupsResource = v1alpha1.SchemeGroupVersion.WithResource("dashboardgroups")
 
-var dashboardgroupsKind = schema.GroupVersionKind{Group: "ui.openviz.dev", Version: "v1alpha1", Kind: "DashboardGroup"}
+var dashboardgroupsKind = v1alpha1.SchemeGroupVersion.WithKind("DashboardGroup")
 
 // Create takes the representation of a dashboardGroup and creates it.  Returns the server's representation of the dashboardGroup, and an error, if there is any.
 func (c *FakeDashboardGroups) Create(ctx context.Context, dashboardGroup *v1alpha1.DashboardGroup, opts v1.CreateOptions) (result *v1alpha1.DashboardGroup, err error) {

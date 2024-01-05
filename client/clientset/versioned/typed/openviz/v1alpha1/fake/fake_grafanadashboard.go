@@ -24,7 +24,6 @@ import (
 	v1alpha1 "go.openviz.dev/apimachinery/apis/openviz/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeGrafanaDashboards struct {
 	ns   string
 }
 
-var grafanadashboardsResource = schema.GroupVersionResource{Group: "openviz.dev", Version: "v1alpha1", Resource: "grafanadashboards"}
+var grafanadashboardsResource = v1alpha1.SchemeGroupVersion.WithResource("grafanadashboards")
 
-var grafanadashboardsKind = schema.GroupVersionKind{Group: "openviz.dev", Version: "v1alpha1", Kind: "GrafanaDashboard"}
+var grafanadashboardsKind = v1alpha1.SchemeGroupVersion.WithKind("GrafanaDashboard")
 
 // Get takes name of the grafanaDashboard, and returns the corresponding grafanaDashboard object, and an error if there is any.
 func (c *FakeGrafanaDashboards) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.GrafanaDashboard, err error) {
