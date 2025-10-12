@@ -31,6 +31,7 @@ type OpenvizV1alpha1Interface interface {
 	GrafanaDashboardsGetter
 	GrafanaDashboardTemplatesGetter
 	GrafanaDatasourcesGetter
+	PersesDashboardsGetter
 }
 
 // OpenvizV1alpha1Client is used to interact with features provided by the openviz.dev group.
@@ -48,6 +49,10 @@ func (c *OpenvizV1alpha1Client) GrafanaDashboardTemplates(namespace string) Graf
 
 func (c *OpenvizV1alpha1Client) GrafanaDatasources(namespace string) GrafanaDatasourceInterface {
 	return newGrafanaDatasources(c, namespace)
+}
+
+func (c *OpenvizV1alpha1Client) PersesDashboards(namespace string) PersesDashboardInterface {
+	return newPersesDashboards(c, namespace)
 }
 
 // NewForConfig creates a new OpenvizV1alpha1Client for the given config.

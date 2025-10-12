@@ -1,0 +1,708 @@
+kind: Dashboard
+metadata:
+  name: d1
+  createdAt: '2025-07-18T09:29:20.05689991Z'
+  updatedAt: '2025-07-18T11:14:00.734086915Z'
+  version: 5
+  project: kubedb
+spec:
+  display:
+    name: KubeDB / Postgres / Summary
+    description: This dashboard works with postgres_exporter for prometheus
+  panels:
+    connections:
+      kind: Panel
+      spec:
+        display:
+          name: Connections
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum(pg_stat_activity_count{namespace="$namespace",pod=~"$app-\\d+$"})
+                    by (state)
+    cpuLimit:
+      kind: Panel
+      spec:
+        display:
+          name: CPU Limit(core)
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    kubedb_com_postgres_resource_limit_cpu{namespace="$namespace",
+                    app="$app"}
+    cpuRequest:
+      kind: Panel
+      spec:
+        display:
+          name: CPU Request (Core)
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    kubedb_com_postgres_resource_request_cpu{namespace="$namespace",
+                    app="$app"}
+    cpuUsage:
+      kind: Panel
+      spec:
+        display:
+          name: CPU Usage
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{namespace="$namespace",
+                    pod=~"$app-\\d+$"}) by (pod)
+    databaseStatus:
+      kind: Panel
+      spec:
+        display:
+          name: Database Status
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+            metricLabel: phase
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: thanos
+                  query: >-
+                    kubedb_com_postgres_status_phase{namespace="${namespace}",
+                    app="${app}"} == 1
+    deletionPolicy:
+      kind: Panel
+      spec:
+        display:
+          name: Deletion Policy
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+            metricLabel: deletionPolicy
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: 'kubedb_com_postgres_info{namespace="$namespace", app="$app"}'
+    diskRWInfo:
+      kind: Panel
+      spec:
+        display:
+          name: Disk R/W Info
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum(rate(container_fs_writes_total{namespace="$namespace",
+                    pod=~"$app-\\d+$"}[5m]))by(pod)
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum(rate(container_fs_reads_total{namespace="$namespace",
+                    pod=~"$app-\\d+$"}[5m]))by(pod)
+    diskUsage:
+      kind: Panel
+      spec:
+        display:
+          name: Disk Usage
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    avg(container_blkio_device_usage_total{namespace="$namespace",
+                    pod=~"$app-\\d+$"}) by (pod)
+    iops:
+      kind: Panel
+      spec:
+        display:
+          name: IOPS(Reads+Writes)
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    ceil(sum by(pod)
+                    (rate(container_fs_reads_total{container!="",
+                    namespace=~"$namespace", pod=~"$app-\\d+$"}[5m]) +
+                    rate(container_fs_writes_total{container!=""
+                    ,namespace=~"$namespace", pod=~"$app-\\d+$"}[5m])))
+    maxConnections:
+      kind: Panel
+      spec:
+        display:
+          name: Max Connections
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    avg(pg_settings_max_connections{namespace="$namespace",
+                    pod=~"$app-\\d+$"})
+    memoryLimit:
+      kind: Panel
+      spec:
+        display:
+          name: Memory Limit
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+            format:
+              unit: bytes
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    kubedb_com_postgres_resource_limit_memory{namespace="$namespace",
+                    app="$app"}
+    memoryRequest:
+      kind: Panel
+      spec:
+        display:
+          name: Memory Request
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+            format:
+              unit: bytes
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    kubedb_com_postgres_resource_request_memory{namespace="$namespace",
+                    app="$app"}
+    memoryUsage:
+      kind: Panel
+      spec:
+        display:
+          name: Memory Usage
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum(node_namespace_pod_container:container_memory_working_set_bytes{namespace="$namespace",
+                    pod=~"$app-\\d+$",container!=""}) by (pod)
+    persistentVolumeUsageHistory:
+      kind: Panel
+      spec:
+        display:
+          name: Persistent Volume Usage History
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (kubelet_volume_stats_used_bytes + on(persistentvolumeclaim)
+                    group_left(pod)
+                    kube_pod_spec_volumes_persistentvolumeclaims_info{pod=~"$app-\\d+$",namespace=~"$namespace"})
+    postgresVersion:
+      kind: Panel
+      spec:
+        display:
+          name: Version
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+            metricLabel: version
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: 'kubedb_com_postgres_info{namespace="$namespace", app="$app"}'
+    primaryFailoverIndicator:
+      kind: Panel
+      spec:
+        display:
+          name: Primary Pod FailOver Indicator
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    AVG(rate(pg_stat_replication_reply_time{namespace="$namespace",
+                    pod=~"$app-\\d+$"}[5m])) by (pod)
+    raftPrimaryTracker:
+      kind: Panel
+      spec:
+        display:
+          name: Raft Primary Tracker
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    pg_coordinator_raft_primary{namespace="$namespace",
+                    pod=~"$app-."}
+    receiveBandwidth:
+      kind: Panel
+      spec:
+        display:
+          name: Receive Bandwidth
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum(irate(container_network_receive_bytes_total{namespace=~"$namespace",
+                    pod=~"$app-\\d+$"}[5m])) by (pod)
+    replicationLag:
+      kind: Panel
+      spec:
+        display:
+          name: Postgres Replication Lag
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    pg_stat_replication_pg_wal_lsn_diff{namespace="$namespace",application_name=~"$app-\\d+$"}
+    sslMode:
+      kind: Panel
+      spec:
+        display:
+          name: SSL Mode
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+            metricLabel: sslMode
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: 'kubedb_com_postgres_info{namespace="$namespace", app="$app"}'
+    storageRequest:
+      kind: Panel
+      spec:
+        display:
+          name: Storage Request
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+            format:
+              unit: bytes
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    kubedb_com_postgres_resource_request_storage{namespace="$namespace",
+                    app="$app"}
+    throughput:
+      kind: Panel
+      spec:
+        display:
+          name: ThroughPut(Read+Write)
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum by(pod)
+                    (rate(container_fs_reads_bytes_total{container!="",
+                    namespace=~"$namespace", pod=~"$app-\\d+$"}[5m]) +
+                    rate(container_fs_writes_bytes_total{container!=""
+                    ,namespace=~"$namespace", pod=~"$app-\\d+$"}[5m]))
+    totalReplicas:
+      kind: Panel
+      spec:
+        display:
+          name: Total Replicas
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    kubedb_com_postgres_replicas{namespace="$namespace",app="$app"}
+    transmitBandwidth:
+      kind: Panel
+      spec:
+        display:
+          name: Transmit Bandwidth
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum(irate(container_network_transmit_bytes_total{namespace=~"$namespace",
+                    pod=~"$app-\\d+$"}[5m])) by (pod)
+    uptime:
+      kind: Panel
+      spec:
+        display:
+          name: Uptime
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last
+            format:
+              unit: seconds
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    time() - kubedb_com_postgres_created{namespace="$namespace",
+                    app="$app"}
+  layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: General Info
+          collapse:
+            open: true
+        items:
+          - x: 0
+            'y': 0
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/postgresVersion'
+          - x: 4
+            'y': 0
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/uptime'
+          - x: 8
+            'y': 0
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/totalReplicas'
+          - x: 12
+            'y': 0
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/databaseStatus'
+          - x: 16
+            'y': 0
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/sslMode'
+          - x: 20
+            'y': 0
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/deletionPolicy'
+          - x: 0
+            'y': 3
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/cpuRequest'
+          - x: 4
+            'y': 3
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/cpuLimit'
+          - x: 8
+            'y': 3
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/memoryRequest'
+          - x: 12
+            'y': 3
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/memoryLimit'
+          - x: 16
+            'y': 3
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/storageRequest'
+          - x: 20
+            'y': 3
+            width: 4
+            height: 3
+            content:
+              $ref: '#/spec/panels/maxConnections'
+          - x: 0
+            'y': 6
+            width: 12
+            height: 9
+            content:
+              $ref: '#/spec/panels/primaryFailoverIndicator'
+          - x: 12
+            'y': 6
+            width: 12
+            height: 9
+            content:
+              $ref: '#/spec/panels/connections'
+          - x: 0
+            'y': 15
+            width: 24
+            height: 7
+            content:
+              $ref: '#/spec/panels/replicationLag'
+          - x: 0
+            'y': 22
+            width: 24
+            height: 8
+            content:
+              $ref: '#/spec/panels/raftPrimaryTracker'
+    - kind: Grid
+      spec:
+        display:
+          title: CPU Info
+          collapse:
+            open: true
+        items:
+          - x: 0
+            'y': 0
+            width: 24
+            height: 10
+            content:
+              $ref: '#/spec/panels/cpuUsage'
+    - kind: Grid
+      spec:
+        display:
+          title: Memory Info
+          collapse:
+            open: true
+        items:
+          - x: 0
+            'y': 0
+            width: 24
+            height: 10
+            content:
+              $ref: '#/spec/panels/memoryUsage'
+    - kind: Grid
+      spec:
+        display:
+          title: Storage Info
+          collapse:
+            open: true
+        items:
+          - x: 0
+            'y': 0
+            width: 12
+            height: 9
+            content:
+              $ref: '#/spec/panels/diskUsage'
+          - x: 12
+            'y': 0
+            width: 12
+            height: 9
+            content:
+              $ref: '#/spec/panels/diskRWInfo'
+          - x: 0
+            'y': 9
+            width: 12
+            height: 7
+            content:
+              $ref: '#/spec/panels/iops'
+          - x: 12
+            'y': 9
+            width: 12
+            height: 7
+            content:
+              $ref: '#/spec/panels/throughput'
+    - kind: Grid
+      spec:
+        display:
+          title: Persistent Storage Insight
+          collapse:
+            open: true
+        items:
+          - x: 0
+            'y': 0
+            width: 24
+            height: 8
+            content:
+              $ref: '#/spec/panels/persistentVolumeUsageHistory'
+    - kind: Grid
+      spec:
+        display:
+          title: Network Info
+          collapse:
+            open: true
+        items:
+          - x: 0
+            'y': 0
+            width: 12
+            height: 7
+            content:
+              $ref: '#/spec/panels/receiveBandwidth'
+          - x: 12
+            'y': 0
+            width: 12
+            height: 7
+            content:
+              $ref: '#/spec/panels/transmitBandwidth'
+  variables:
+    - kind: ListVariable
+      spec:
+        name: namespace
+        display:
+          name: Namespace
+          hidden: false
+        defaultValue: tenant1
+        allowAllValue: false
+        allowMultiple: false
+        sort: alphabetical-asc
+        plugin:
+          kind: PrometheusLabelValuesVariable
+          spec:
+            datasource:
+              kind: PrometheusDatasource
+              name: thanos
+            labelName: namespace
+            matchers: []
+    - kind: ListVariable
+      spec:
+        name: app
+        display:
+          name: Postgres
+          hidden: false
+        defaultValue: pg1
+        allowAllValue: false
+        allowMultiple: false
+        sort: alphabetical-asc
+        plugin:
+          kind: PrometheusPromQLVariable
+          spec:
+            expr: 'kubedb_com_postgres_created{namespace="${namespace}"}'
+            labelName: app
+  duration: 1h
+  refreshInterval: 5s
+  datasources:
+    thanos:
+      default: true
+      plugin:
+        kind: PrometheusDatasource
+        spec:
+          directUrl: 'http://10.2.0.140/querier'
+          scrapeInterval: 10s

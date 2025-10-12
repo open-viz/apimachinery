@@ -19,7 +19,11 @@ package healthz
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
@@ -31,9 +35,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/endpoints/metrics"
 	"k8s.io/apiserver/pkg/server/httplog"
+	"k8s.io/client-go/util/cert"
 	"k8s.io/component-base/metrics/prometheus/slis"
 	"k8s.io/klog/v2"
 )
+
+const DefaultHealthzPath = "/healthz"
 
 // HealthChecker is a named healthz checker.
 type HealthChecker interface {
@@ -105,6 +112,29 @@ func (i *informerSync) Name() string {
 	return "informer-sync"
 }
 
+type shutdown struct {
+	stopCh <-chan struct{}
+}
+
+// NewShutdownHealthz returns a new HealthChecker that will fail if the embedded channel is closed.
+// This is intended to allow for graceful shutdown sequences.
+func NewShutdownHealthz(stopCh <-chan struct{}) HealthChecker {
+	return &shutdown{stopCh}
+}
+
+func (s *shutdown) Name() string {
+	return "shutdown"
+}
+
+func (s *shutdown) Check(req *http.Request) error {
+	select {
+	case <-s.stopCh:
+		return fmt.Errorf("process is shutting down")
+	default:
+	}
+	return nil
+}
+
 func (i *informerSync) Check(_ *http.Request) error {
 	stopCh := make(chan struct{})
 	// Close stopCh to force checking if informers are synced now.
@@ -131,7 +161,7 @@ func NamedCheck(name string, check func(r *http.Request) error) HealthChecker {
 // exactly one call to InstallHandler. Calling InstallHandler more
 // than once for the same mux will result in a panic.
 func InstallHandler(mux mux, checks ...HealthChecker) {
-	InstallPathHandler(mux, "/healthz", checks...)
+	InstallPathHandler(mux, DefaultHealthzPath, checks...)
 }
 
 // InstallReadyzHandler registers handlers for health checking on the path
@@ -305,4 +335,70 @@ func formatQuoted(names ...string) string {
 		quoted = append(quoted, fmt.Sprintf("%q", name))
 	}
 	return strings.Join(quoted, ",")
+}
+
+// CertHealthz returns true if tls.crt is unchanged when checked
+func NewCertHealthz(certFile string) (HealthChecker, error) {
+	var hash string
+	if certFile != "" {
+		var err error
+		hash, err = calculateHash(certFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &certChecker{certFile: certFile, initialHash: hash}, nil
+}
+
+// certChecker fails health check if server certificate changes.
+type certChecker struct {
+	certFile    string
+	initialHash string
+}
+
+func (certChecker) Name() string {
+	return "cert-checker"
+}
+
+// CertHealthz is a health check that returns true.
+func (c certChecker) Check(_ *http.Request) error {
+	if c.certFile == "" {
+		return nil
+	}
+	hash, err := calculateHash(c.certFile)
+	if err != nil {
+		return err
+	}
+	if c.initialHash != hash {
+		return fmt.Errorf("certificate hash changed from %s to %s", c.initialHash, hash)
+	}
+	return nil
+}
+
+func calculateHash(certFile string) (string, error) {
+	crtBytes, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to read certificate `%s`. Reason: %v", certFile, err)
+	}
+	crt, err := cert.ParseCertsPEM(crtBytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse certificate `%s`. Reason: %v", certFile, err)
+	}
+	return Hash(crt[0]), nil
+}
+
+// ref: https://github.com/kubernetes/kubernetes/blob/197fc67693c2391dcbc652fc185ba85b5ef82a8e/cmd/kubeadm/app/util/pubkeypin/pubkeypin.go#L77
+
+const (
+	// formatSHA256 is the prefix for pins that are full-length SHA-256 hashes encoded in base 16 (hex)
+	formatSHA256 = "sha256"
+)
+
+// Hash calculates the SHA-256 hash of the Subject Public Key Information (SPKI)
+// object in an x509 certificate (in DER encoding). It returns the full hash as a
+// hex encoded string (suitable for passing to Set.Allow).
+func Hash(certificate *x509.Certificate) string {
+	// ref: https://tools.ietf.org/html/rfc5280#section-4.1.2.7
+	spkiHash := sha256.Sum256(certificate.RawSubjectPublicKeyInfo)
+	return formatSHA256 + ":" + strings.ToLower(hex.EncodeToString(spkiHash[:]))
 }

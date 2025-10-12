@@ -26,10 +26,13 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apiserver/pkg/apis/apiserver"
 	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
 	"k8s.io/apiserver/pkg/authentication/request/headerrequest"
+	"k8s.io/apiserver/pkg/features"
 	"k8s.io/apiserver/pkg/server"
 	"k8s.io/apiserver/pkg/server/dynamiccertificates"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -55,6 +58,7 @@ type RequestHeaderAuthenticationOptions struct {
 	ClientCAFile string
 
 	UsernameHeaders     []string
+	UIDHeaders          []string
 	GroupHeaders        []string
 	ExtraHeaderPrefixes []string
 	AllowedNames        []string
@@ -84,6 +88,20 @@ func (s *RequestHeaderAuthenticationOptions) Validate() []error {
 	}
 	if len(s.ExtraHeaderPrefixes) > 0 && !caseInsensitiveHas(s.ExtraHeaderPrefixes, "X-Remote-Extra-") {
 		klog.Warningf("--requestheader-extra-headers-prefix is set without specifying the standard X-Remote-Extra- header prefix - API aggregation will not work")
+	}
+
+	if !utilfeature.DefaultFeatureGate.Enabled(features.RemoteRequestHeaderUID) {
+		if len(s.UIDHeaders) > 0 {
+			allErrors = append(allErrors, fmt.Errorf("--requestheader-uid-headers requires the %q feature to be enabled", features.RemoteRequestHeaderUID))
+		}
+	} else {
+		if err := checkForWhiteSpaceOnly("requestheader-uid-headers", s.UIDHeaders...); err != nil {
+			allErrors = append(allErrors, err)
+		}
+		if len(s.UIDHeaders) > 0 && !caseInsensitiveHas(s.UIDHeaders, "X-Remote-Uid") {
+			// this was added later and so we are able to error out
+			allErrors = append(allErrors, fmt.Errorf("--requestheader-uid-headers is set without specifying the standard X-Remote-Uid header - API aggregation will not work"))
+		}
 	}
 
 	return allErrors
@@ -116,6 +134,9 @@ func (s *RequestHeaderAuthenticationOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&s.UsernameHeaders, "requestheader-username-headers", s.UsernameHeaders, ""+
 		"List of request headers to inspect for usernames. X-Remote-User is common.")
 
+	fs.StringSliceVar(&s.UIDHeaders, "requestheader-uid-headers", s.UIDHeaders, ""+
+		"List of request headers to inspect for UIDs. X-Remote-Uid is suggested. Requires the RemoteRequestHeaderUID feature to be enabled.")
+
 	fs.StringSliceVar(&s.GroupHeaders, "requestheader-group-headers", s.GroupHeaders, ""+
 		"List of request headers to inspect for groups. X-Remote-Group is suggested.")
 
@@ -147,6 +168,7 @@ func (s *RequestHeaderAuthenticationOptions) ToAuthenticationRequestHeaderConfig
 
 	return &authenticatorfactory.RequestHeaderConfig{
 		UsernameHeaders:     headerrequest.StaticStringSlice(s.UsernameHeaders),
+		UIDHeaders:          headerrequest.StaticStringSlice(s.UIDHeaders),
 		GroupHeaders:        headerrequest.StaticStringSlice(s.GroupHeaders),
 		ExtraHeaderPrefixes: headerrequest.StaticStringSlice(s.ExtraHeaderPrefixes),
 		CAContentProvider:   caBundleProvider,
@@ -222,8 +244,10 @@ type DelegatingAuthenticationOptions struct {
 	// CustomRoundTripperFn allows for specifying a middleware function for custom HTTP behaviour for the authentication webhook client.
 	CustomRoundTripperFn transport.WrapperFunc
 
-	// DisableAnonymous gives user an option to disable Anonymous authentication.
-	DisableAnonymous bool
+	// Anonymous gives user an option to enable/disable Anonymous authentication.
+	Anonymous *apiserver.AnonymousAuthConfig
+
+	AuthenticationConfigMapNamespace string
 }
 
 func NewDelegatingAuthenticationOptions() *DelegatingAuthenticationOptions {
@@ -232,12 +256,20 @@ func NewDelegatingAuthenticationOptions() *DelegatingAuthenticationOptions {
 		CacheTTL:   10 * time.Second,
 		ClientCert: ClientCertAuthenticationOptions{},
 		RequestHeader: RequestHeaderAuthenticationOptions{
-			UsernameHeaders:     []string{"x-remote-user"},
+			UsernameHeaders: []string{"x-remote-user"},
+			// we specifically don't default UID headers as these were introduced
+			// later (kube 1.32) and we don't want 3rd parties to be trusting the default headers
+			// before we can safely say that all KAS instances know they should
+			// remove them from an incoming request in its WithAuthentication handler.
+			// The defaulting will be enabled in a future (1.33+) version.
+			UIDHeaders:          nil,
 			GroupHeaders:        []string{"x-remote-group"},
 			ExtraHeaderPrefixes: []string{"x-remote-extra-"},
 		},
-		WebhookRetryBackoff: DefaultAuthWebhookRetryBackoff(),
-		TokenRequestTimeout: 10 * time.Second,
+		WebhookRetryBackoff:              DefaultAuthWebhookRetryBackoff(),
+		TokenRequestTimeout:              10 * time.Second,
+		Anonymous:                        &apiserver.AnonymousAuthConfig{Enabled: true},
+		AuthenticationConfigMapNamespace: metav1.NamespaceSystem,
 	}
 }
 
@@ -296,6 +328,9 @@ func (s *DelegatingAuthenticationOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.TolerateInClusterLookupFailure, "authentication-tolerate-lookup-failure", s.TolerateInClusterLookupFailure, ""+
 		"If true, failures to look up missing authentication configuration from the cluster are not considered fatal. "+
 		"Note that this can result in authentication that treats all requests as anonymous.")
+
+	fs.StringVar(&s.AuthenticationConfigMapNamespace, "authentication-configmap-namespace", s.AuthenticationConfigMapNamespace, ""+
+		"Namespace of extension-apiserver-authentication configmap")
 }
 
 func (s *DelegatingAuthenticationOptions) ApplyTo(authenticationInfo *server.AuthenticationInfo, servingInfo *server.SecureServingInfo, openAPIConfig *openapicommon.Config) error {
@@ -305,7 +340,7 @@ func (s *DelegatingAuthenticationOptions) ApplyTo(authenticationInfo *server.Aut
 	}
 
 	cfg := authenticatorfactory.DelegatingAuthenticatorConfig{
-		Anonymous:                !s.DisableAnonymous,
+		Anonymous:                &apiserver.AnonymousAuthConfig{Enabled: true},
 		CacheTTL:                 s.CacheTTL,
 		WebhookRetryBackoff:      s.WebhookRetryBackoff,
 		TokenAccessReviewTimeout: s.TokenRequestTimeout,
@@ -336,9 +371,9 @@ func (s *DelegatingAuthenticationOptions) ApplyTo(authenticationInfo *server.Aut
 
 	} else if !s.SkipInClusterLookup {
 		if client == nil {
-			klog.Warningf("No authentication-kubeconfig provided in order to lookup client-ca-file in configmap/%s in %s, so client certificate authentication won't work.", authenticationConfigMapName, authenticationConfigMapNamespace)
+			klog.Warningf("No authentication-kubeconfig provided in order to lookup client-ca-file in configmap/%s in %s, so client certificate authentication won't work.", authenticationConfigMapName, s.AuthenticationConfigMapNamespace)
 		} else {
-			clientCAProvider, err = dynamiccertificates.NewDynamicCAFromConfigMapController("client-ca", authenticationConfigMapNamespace, authenticationConfigMapName, "client-ca-file", client)
+			clientCAProvider, err = dynamiccertificates.NewDynamicCAFromConfigMapController("client-ca", s.AuthenticationConfigMapNamespace, authenticationConfigMapName, "client-ca-file", client)
 			if err != nil {
 				return fmt.Errorf("unable to load configmap based client CA file: %v", err)
 			}
@@ -360,7 +395,7 @@ func (s *DelegatingAuthenticationOptions) ApplyTo(authenticationInfo *server.Aut
 
 	} else if !s.SkipInClusterLookup {
 		if client == nil {
-			klog.Warningf("No authentication-kubeconfig provided in order to lookup requestheader-client-ca-file in configmap/%s in %s, so request-header client certificate authentication won't work.", authenticationConfigMapName, authenticationConfigMapNamespace)
+			klog.Warningf("No authentication-kubeconfig provided in order to lookup requestheader-client-ca-file in configmap/%s in %s, so request-header client certificate authentication won't work.", authenticationConfigMapName, s.AuthenticationConfigMapNamespace)
 		} else {
 			requestHeaderConfig, err = s.createRequestHeaderConfig(client)
 			if err != nil {
@@ -396,7 +431,7 @@ func (s *DelegatingAuthenticationOptions) ApplyTo(authenticationInfo *server.Aut
 }
 
 const (
-	authenticationConfigMapNamespace = metav1.NamespaceSystem
+	// authenticationConfigMapNamespace = metav1.NamespaceSystem
 	// authenticationConfigMapName is the name of ConfigMap in the kube-system namespace holding the root certificate
 	// bundle to use to verify client certificates on incoming requests before trusting usernames in headers specified
 	// by --requestheader-username-headers. This is created in the cluster by the kube-apiserver.
@@ -405,7 +440,7 @@ const (
 )
 
 func (s *DelegatingAuthenticationOptions) createRequestHeaderConfig(client kubernetes.Interface) (*authenticatorfactory.RequestHeaderConfig, error) {
-	dynamicRequestHeaderProvider, err := newDynamicRequestHeaderController(client)
+	dynamicRequestHeaderProvider, err := newDynamicRequestHeaderController(client, s.AuthenticationConfigMapNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create request header authentication config: %v", err)
 	}
@@ -421,6 +456,7 @@ func (s *DelegatingAuthenticationOptions) createRequestHeaderConfig(client kuber
 	return &authenticatorfactory.RequestHeaderConfig{
 		CAContentProvider:   dynamicRequestHeaderProvider,
 		UsernameHeaders:     headerrequest.StringSliceProvider(headerrequest.StringSliceProviderFunc(dynamicRequestHeaderProvider.UsernameHeaders)),
+		UIDHeaders:          headerrequest.StringSliceProvider(headerrequest.StringSliceProviderFunc(dynamicRequestHeaderProvider.UIDHeaders)),
 		GroupHeaders:        headerrequest.StringSliceProvider(headerrequest.StringSliceProviderFunc(dynamicRequestHeaderProvider.GroupHeaders)),
 		ExtraHeaderPrefixes: headerrequest.StringSliceProvider(headerrequest.StringSliceProviderFunc(dynamicRequestHeaderProvider.ExtraHeaderPrefixes)),
 		AllowedClientNames:  headerrequest.StringSliceProvider(headerrequest.StringSliceProviderFunc(dynamicRequestHeaderProvider.AllowedClientNames)),
