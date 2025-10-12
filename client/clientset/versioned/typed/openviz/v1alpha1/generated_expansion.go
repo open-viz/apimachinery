@@ -23,3 +23,5 @@ type GrafanaDashboardExpansion interface{}
 type GrafanaDashboardTemplateExpansion interface{}
 
 type GrafanaDatasourceExpansion interface{}
+
+type PersesDashboardExpansion interface{}
