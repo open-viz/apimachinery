@@ -1187,10 +1187,24 @@ func schema_apimachinery_apis_openviz_v1alpha1_PersesConfiguration(ref common.Re
 							Format:      "",
 						},
 					},
+					"folderID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FolderID defines the Perses folder id.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
 					"projectName": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
+						},
+					},
+					"projectID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProjectID defines the Perses project id.",
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 				},
